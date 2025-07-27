@@ -52,3 +52,8 @@ PlatformOpenGL WASM:
 @Import(module = "platformOpenGL", name = "glScissor")
 public static native void _wglScissor(int x, int y, int width, int height);
 ```
+
+# Credits
+lax1dude: made the gson port
+Peytonplayz585: made the lwjgl compatibility layer
+radmanplays: modified the compatibility layer to make it support more functions
