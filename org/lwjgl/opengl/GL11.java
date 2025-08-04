@@ -26,6 +26,9 @@ public class GL11 extends RealOpenGLEnums {
 	private static boolean isPolygonMode = false;
 
 	private static int currentMode = -1;
+	
+	private static boolean useColor = false;
+	private static boolean useTexCoord = false;
 
 	public static void glEnable(int p1) {
 		switch (p1) {
@@ -157,12 +160,8 @@ public class GL11 extends RealOpenGLEnums {
 		}
 		isDrawing = true;
 		currentMode = mode;
-		if (mode == GL_POLYGON) {
-			isPolygonMode = true;
-			polygonVertices.clear();
-		} else {
-			worldRenderer.begin(mode, DefaultVertexFormats.POSITION);
-		}
+	    useColor = false;
+	    useTexCoord = false;
 
 	}
 	
@@ -187,10 +186,15 @@ public class GL11 extends RealOpenGLEnums {
 			isPolygonMode = false;
 			polygonVertices.clear();
 		} else {
-			tessellator.draw();
+	        if (vertexFormatInitialized) {
+	            tessellator.draw();
+	        }
 		}
 		isDrawing = false;
 		currentMode = -1;
+	    vertexFormatInitialized = false;
+	    useColor = false;
+	    useTexCoord = false;
 	}
 	public static void glVertex2i(int x, int y) {
 		if (!isDrawing) {
@@ -199,6 +203,7 @@ public class GL11 extends RealOpenGLEnums {
 		if (isPolygonMode) {
 			polygonVertices.add(new double[]{x, y, 0});
 		} else {
+			ensureStarted(currentMode);
 			worldRenderer.pos(x, y, 0).endVertex();
 		}
 	}
@@ -210,6 +215,7 @@ public class GL11 extends RealOpenGLEnums {
 		if (isPolygonMode) {
 			polygonVertices.add(new double[]{x, y, 0.0});
 		} else {
+			ensureStarted(currentMode);
 			worldRenderer.pos(x, y, 0.0).endVertex();
 		}
 	}
@@ -221,6 +227,7 @@ public class GL11 extends RealOpenGLEnums {
 		if (isPolygonMode) {
 			polygonVertices.add(new double[]{x, y, z});
 		} else {
+			ensureStarted(currentMode);
 			worldRenderer.pos(x, y, z).endVertex();
 		}
 	}
@@ -229,7 +236,31 @@ public class GL11 extends RealOpenGLEnums {
 		if (!isDrawing) {
 			throw new IllegalStateException("glTexCoord2f called outside glBegin/glEnd!");
 		}
+		useTexCoord = true;
 		worldRenderer.tex(u, v);
+	}
+	
+	private static boolean vertexFormatInitialized = false;
+
+	private static void ensureStarted(int mode) {
+	    if (!vertexFormatInitialized) {
+	        vertexFormatInitialized = true;
+
+			if (mode == GL_POLYGON) {
+				isPolygonMode = true;
+				polygonVertices.clear();
+			}else {
+		        if (useColor && useTexCoord) {
+		            worldRenderer.begin(mode, DefaultVertexFormats.POSITION_TEX_COLOR);
+		        } else if (useColor) {
+		            worldRenderer.begin(mode, DefaultVertexFormats.POSITION_COLOR);
+		        } else if (useTexCoord) {
+		            worldRenderer.begin(mode, DefaultVertexFormats.POSITION_TEX);
+		        } else {
+		            worldRenderer.begin(mode, DefaultVertexFormats.POSITION);
+		        }
+			}
+	    }
 	}
 
 	public static void glScissor(int x, int y, int width, int height) {
@@ -301,9 +332,11 @@ public class GL11 extends RealOpenGLEnums {
 
 	public static void glColor4f(float f, float g, float h, float i) {
 		color(f, g, h, i);
+		useColor = true;
 	}
 	public static void glColor4d(double f, double g, double h, double i) {
 		color((float)f, (float)g, (float)h, (float)i);
+		useColor = true;
 	}
 
 	public static void glBindTexture(int i, int var110) {
